@@ -1,0 +1,15 @@
+{
+  "XYalign.samples": [
+    {
+      "sample_id": "sample_001",
+      "bam": "gs://YOUR_BUCKET/sample_001.bam",
+      "bam_index": "gs://YOUR_BUCKET/sample_001.bam.bai"
+    }
+  ],
+  "XYalign.reference_fasta": "gs://YOUR_BUCKET/reference.fa",
+  "XYalign.reference_fasta_index": "gs://YOUR_BUCKET/reference.fa.fai",
+  "XYalign.chromosomes": ["chr19", "chrX", "chrY"],
+  "XYalign.characterize": false,
+  "XYalign.run_remapping": false,
+  "XYalign.docker_image": "ghcr.io/aou-multiomics-analysis/sexchromosome:main"
+}

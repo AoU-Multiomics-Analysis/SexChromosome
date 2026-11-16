@@ -1,0 +1,25 @@
+{
+  "XYalign.samples": [
+    {
+      "sample_id": "sample_001",
+      "bam": "gs://YOUR_BUCKET/sample_001.bam",
+      "bam_index": "gs://YOUR_BUCKET/sample_001.bam.bai",
+      "y_status": "present"
+    },
+    {
+      "sample_id": "sample_002",
+      "bam": "gs://YOUR_BUCKET/sample_002.bam",
+      "bam_index": "gs://YOUR_BUCKET/sample_002.bam.bai",
+      "y_status": "absent"
+    }
+  ],
+  "XYalign.reference_fasta": "gs://YOUR_BUCKET/reference.fa",
+  "XYalign.reference_fasta_index": "gs://YOUR_BUCKET/reference.fa.fai",
+  "XYalign.reference_mask": "gs://YOUR_BUCKET/assembly_specific_mask.bed",
+  "XYalign.run_remapping": true,
+  "XYalign.single_end": false,
+  "XYalign.remap_cpu": 8,
+  "XYalign.remap_memory_gb": 32,
+  "XYalign.remap_disk_gb": 300,
+  "XYalign.docker_image": "ghcr.io/aou-multiomics-analysis/sexchromosome:main"
+}

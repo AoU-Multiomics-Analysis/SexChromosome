@@ -1,4 +1,8 @@
 version: 1.2
 workflows:
-  - subclass: WDL 
-    primaryDescriptorPath: <Path> 
+  - name: XYalign
+    subclass: WDL
+    primaryDescriptorPath: /workflows/xyalign.wdl
+    testParameterFiles:
+      - /inputs/xyalign.analysis.example.json
+      - /inputs/xyalign.remap.example.json
