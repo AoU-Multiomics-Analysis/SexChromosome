@@ -13,7 +13,7 @@ import sys
 import tarfile
 
 LOG = logging.getLogger('xyalign_runner')
-TOKEN = re.compile(r'^[A-Za-z0-9_][A-Za-z0-9_.:-]*$')
+TOKEN = re.compile(r'^[A-Za-z0-9_][A-Za-z0-9_.:-]*\Z')
 INDEX_SUFFIXES = ['.fai', '.dict', '.amb', '.ann', '.bwt', '.pac', '.sa']
 
 
@@ -103,10 +103,16 @@ def stage_bam(args, reference_contigs, chromosomes):
             raise ValueError('An analysis chromosome is absent from the BAM')
         # Upstream inserts read-group values into shell strings during remapping.
         if args.mode == 'remap':
-            for group in bam.header.to_dict().get('RG', []):
-                for value in group.values():
-                    if re.search(r"[^A-Za-z0-9_.:/ +,=-]", str(value)):
-                        raise ValueError('A read-group value contains unsupported shell characters')
+            validate_read_groups(bam.header.to_dict().get('RG', []))
+
+
+def validate_read_groups(groups):
+    for group in groups:
+        if not re.match(r'^[A-Za-z0-9_][A-Za-z0-9_.-]*\Z', str(group.get('ID', ''))):
+            raise ValueError('Read-group IDs must use letters, numbers, underscores, dots, or hyphens')
+        for value in group.values():
+            if re.search(r"[^A-Za-z0-9_.:/ +,=-]", str(value)):
+                raise ValueError('A read-group value contains unsupported shell characters')
 
 
 def validate_mask(path, contigs):
@@ -288,7 +294,7 @@ def main(argv=None):
             raise ValueError('Window size and replicate counts must be positive')
         if args.call_variants and not args.characterize:
             raise ValueError('Variant calling requires --characterize')
-    if args.mode == 'remap' and not re.match(r'^[1-9][0-9]*[mMgG]$', args.java_memory):
+    if args.mode == 'remap' and not re.match(r'^[1-9][0-9]*[mMgG]\Z', args.java_memory):
         raise ValueError('Java memory must use a positive integer with m or g')
     args.output_dir = os.path.abspath(args.output_dir)
     os.makedirs(args.output_dir)

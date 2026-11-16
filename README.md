@@ -72,6 +72,8 @@ The workflow preserves File types inside sample structs. Terra localizes the dec
 
 Use `inputs/xyalign.remap.example.json` for remapping. The Y status selects the reference. It is not a statement about gender or a complete karyotype. Supply a reference mask that matches your assembly and analysis design. No human PAR coordinates are assumed.
 
+For remapping, read-group IDs must contain only letters, numbers, underscores, dots, or hyphens. Start with a letter, number, or underscore. XYalign cannot safely parse IDs with colons or path separators. The wrapper rejects those inputs before remapping.
+
 ## Resources
 
 | Step | CPUs | Memory | Working disk |

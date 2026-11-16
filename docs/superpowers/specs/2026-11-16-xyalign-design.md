@@ -8,7 +8,7 @@ Use typed sample inputs: sample ID, BAM, BAM index, and optional Y status. Prese
 
 Use three tasks: analyze one BAM, prepare masked references once, and remap one BAM. Prepare and remap only when enabled. Remapping requires an explicit Y status for each sample. Analysis must finish before remapping that sample. Return statistics, report archives, logs, and optional remapped BAMs with indexes. Preserve sample order in outputs.
 
-Use a Python wrapper compatible with Python 2.7 and Python 3. Validate all inputs before XYalign runs. Use safe task-local names because upstream commands use shell strings. Reject unresolved cloud paths. Validate BAM sort order, indexes, contig names and lengths, and reference masks. Copy or link readable files into writable task directories. Supply only named CLI arguments. Create all argument lists inside tasks.
+Use a Python wrapper compatible with Python 2.7 and Python 3. Validate all inputs before XYalign runs. Use safe task-local names because upstream commands use shell strings. Reject unresolved cloud paths. Validate BAM sort order, indexes, contig names, lengths, and order, and reference masks. Copy or link readable files into writable task directories. Supply only named CLI arguments. Create all argument lists inside tasks.
 
 Use XYalign 1.1.6 at source commit a68f484cd256dec37abb1166bb3a8a0fb994351f. Use a micromamba base and pinned conda-forge/bioconda packages. Keep the Python 2 environment inside the container. The wrapper must not change upstream scientific calculations. Document the upstream permutation p-value defect. Disable characterization by default. Disable variant calling unless requested.
 

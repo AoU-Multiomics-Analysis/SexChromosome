@@ -32,7 +32,7 @@ class LocalizationTests(unittest.TestCase):
                 runner.require_file(handle.name)
 
     def test_reject_unsafe_tokens(self):
-        for token in ['$(touch BAD)', '../sample', 'a;echo', 'a\nb', '--option', '.', '..']:
+        for token in ['$(touch BAD)', '../sample', 'a;echo', 'a\nb', 'sample\n', '--option', '.', '..']:
             with self.subTest(token=token), self.assertRaises(ValueError):
                 runner.safe_token(token, 'sample ID')
 
@@ -52,6 +52,16 @@ class LocalizationTests(unittest.TestCase):
             handle.flush()
             with self.assertRaisesRegex(ValueError, 'unique'):
                 runner.read_chromosomes(handle.name, 'chrX', 'chrY')
+
+
+class ReadGroupTests(unittest.TestCase):
+    def test_reject_ids_that_upstream_cannot_parse(self):
+        for value in ['lane:1', 'lane 1', '../lane', 'lane/1', 'lane\\1']:
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                runner.validate_read_groups([{'ID': value, 'SM': 'sample'}])
+
+    def test_safe_read_group_is_accepted(self):
+        runner.validate_read_groups([{'ID': 'lane_1.2-3', 'SM': 'sample', 'PL': 'ILLUMINA'}])
 
 
 class ReferenceArchiveTests(unittest.TestCase):
