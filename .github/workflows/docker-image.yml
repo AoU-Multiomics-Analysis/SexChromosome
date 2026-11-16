@@ -1,44 +1,142 @@
 name: Docker Image CI
 
+# Only a change to the script inside the image starts an automatic rebuild.
+# Use workflow_dispatch after changes to the environment, recipe, or smoke test.
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [main]
     paths:
-      - ".github/workflows/docker-image.yml"
-      - "envs/Dockerfile"
-      - "scripts/**"
+      - scripts/xyalign_runner.py
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/xyalign_runner.py
 
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/aou-multiomics-analysis/sexchromosome
 
 jobs:
-  build_and_push:
+  detect:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      changed: ${{ steps.script-change.outputs.changed }}
+    steps:
+      - name: Check out history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check the script change
+        id: script-change
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_ACTION: ${{ github.event.action }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          comparison_sha="$PR_BASE_SHA"
+          if [[ "$EVENT_ACTION" == "synchronize" ]]; then
+            comparison_sha="$BEFORE_SHA"
+          fi
+          for sha in "$comparison_sha" "$PR_HEAD_SHA"; do
+            if [[ ! "$sha" =~ ^[0-9a-fA-F]{40}$ || "$sha" =~ ^0+$ ]]; then
+              echo "A valid commit SHA is required for the script change check." >&2
+              exit 1
+            fi
+            if ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
+              git fetch --no-tags origin "$sha"
+            fi
+          done
+          if git diff --quiet "$comparison_sha" "$PR_HEAD_SHA" -- scripts/xyalign_runner.py; then
+            changed=false
+          else
+            status=$?
+            if [[ "$status" -ne 1 ]]; then
+              exit "$status"
+            fi
+            changed=true
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+
+  build-smoke-publish:
+    needs: detect
+    if: needs.detect.outputs.changed == 'true'
+    concurrency:
+      group: docker-image-${{ github.ref }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: read
       packages: write
-
     steps:
-      - name: Checkout the code
+      - name: Check out source
         uses: actions/checkout@v7
 
-      - name: Log in to ghcr.io with docker
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{github.repository_owner}}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ghcr.io/${{ github.repository }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
-      - name: Build and push docker containers
+      - name: Build the test image
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: ./envs/Dockerfile
-          push: False 
-          tags: |
-            ${{ steps.meta.outputs.tags }}
+          file: envs/Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: sexchromosome:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test real XYalign commands
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/xyalign-smoke"
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env MPLCONFIGDIR=/tmp/matplotlib \
+            --env HOME=/tmp \
+            --volume "$GITHUB_WORKSPACE/tests:/opt/smoke:ro" \
+            --volume "$RUNNER_TEMP/xyalign-smoke:/smoke" \
+            --workdir /smoke \
+            --entrypoint python \
+            sexchromosome:ci /opt/smoke/smoke_xyalign.py --work-dir /smoke
+
+      - name: Save smoke test outputs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: xyalign-smoke-${{ github.sha }}
+          path: ${{ runner.temp }}/xyalign-smoke/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Log in to GHCR
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish the tested image
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          docker tag sexchromosome:ci "$IMAGE:sha-$GITHUB_SHA"
+          docker tag sexchromosome:ci "$IMAGE:main"
+          docker push "$IMAGE:sha-$GITHUB_SHA"
+          docker push "$IMAGE:main"
+          digest=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE:sha-$GITHUB_SHA")
+          echo "Tested image: \`$digest\`" >> "$GITHUB_STEP_SUMMARY"

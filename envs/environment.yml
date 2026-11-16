@@ -1,0 +1,26 @@
+name: base
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+# These Linux x86_64 builds retain upstream XYalign's Python 2 dependencies.
+# Versions and builds were checked with a strict-priority micromamba dry run.
+dependencies:
+  - python=2.7.15=h5a48372_1011_cpython
+  - pip=20.1.1=pyh9f0ad1d_0
+  - setuptools=44.0.0=py27_0
+  - pytest-runner=5.2=py_0
+  - numpy=1.16.5=py27h95a1406_0
+  - pandas=0.24.2=py27hf484d3e_0
+  - scipy=1.2.1=py27h921218d_2
+  - matplotlib-base=2.2.5=py27h250f245_1
+  - pybedtools=0.8.1=py27h4bd9754_2
+  - pysam=0.15.4=py27hbcae180_0
+  - bbmap=38.86=h1296035_0
+  - bedtools=2.29.2=hc088bd4_0
+  - bwa=0.7.17=he4a0461_11
+  - sambamba=0.7.1=h148d290_2
+  - samtools=1.9=h10a08f8_12
+  - platypus-variant=0.8.1.2=py27hb763d49_0
+  - openjdk=8.0.472=h4d9bdce_0
+  - curl=7.87.0=h6312ad2_0
