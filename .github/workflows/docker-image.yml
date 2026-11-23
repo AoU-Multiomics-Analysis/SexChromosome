@@ -115,7 +115,7 @@ jobs:
 
       - name: Save smoke test outputs
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: xyalign-smoke-${{ github.sha }}
           path: ${{ runner.temp }}/xyalign-smoke/
